@@ -2,7 +2,7 @@ package physical
 
 type ManchesterDecoderFactory struct{}
 
-func (mdf *ManchesterDecoderFactory) NewDecoder(bitHandler IfaceBitHandler) *ManchesterDecoder {
+func (mdf *ManchesterDecoderFactory) NewDecoder(bitHandler IfaceBitHandler) Decoder {
 	return &ManchesterDecoder{
 		bitHandler: bitHandler,
 	}
