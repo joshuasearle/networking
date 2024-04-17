@@ -63,7 +63,7 @@ func NewMockDecoder(ifaceBitHandler physical.IfaceBitHandler) *MockDecoder {
 	}
 }
 
-func (d *MockDecoder) Decode(bit physical.Bit) {
+func (d *MockDecoder) Handle(bit physical.Bit) {
 	d.ifaceBitHandler.Handle(bit)
 }
 
