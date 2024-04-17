@@ -1,6 +1,8 @@
 package physical
 
-import "time"
+import (
+	"time"
+)
 
 type IfaceBitForwarder struct {
 	bitHandler BitHandler
@@ -20,8 +22,6 @@ func (i *IfaceBitForwarder) Handle(bit Bit) {
 
 type Device struct {
 	ifaceCables                         map[Iface]*Cable
-	ifacePreviousBit                    map[Iface]Bit
-	ifaceClockPeriodsSinceLastBitChange map[Iface]int
 	ifaceDecoders                       map[Iface]Decoder
 
 	tickerFactory TickerFactory
@@ -38,8 +38,6 @@ type Device struct {
 func NewDevice(tickerFactory TickerFactory, sendClockPeriod time.Duration, listenClockPeriod time.Duration, encoder Encoder, decoderFactory DecoderFactory, bitHandler BitHandler) *Device {
 	return &Device{
 		ifaceCables:                         make(map[Iface]*Cable),
-		ifacePreviousBit:                    make(map[Iface]Bit),
-		ifaceClockPeriodsSinceLastBitChange: make(map[Iface]int),
 		ifaceDecoders:                       make(map[Iface]Decoder),
 
 		tickerFactory: tickerFactory,
@@ -66,8 +64,6 @@ func (d *Device) connect(c *Cable, i Iface) error {
 	}
 
 	d.ifaceCables[i] = c
-	d.ifacePreviousBit[i] = Zero
-	d.ifaceClockPeriodsSinceLastBitChange[i] = 0
 
 	ifaceBitForwarder := NewIfaceBitForwarder(d.bitHandler, i)
 
@@ -88,8 +84,6 @@ func (d *Device) disconnect(c *Cable) error {
 	for i, cable := range d.ifaceCables {
 		if cable == c {
 			delete(d.ifaceCables, i)
-			delete(d.ifacePreviousBit, i)
-			delete(d.ifaceClockPeriodsSinceLastBitChange, i)
 			return nil
 		}
 	}
@@ -121,20 +115,8 @@ func (d *Device) Listen() {
 func (d *Device) handleListenClockCycle() {
 	for i, cable := range d.ifaceCables {
 		curBit := cable.Read()
-		prev := d.ifacePreviousBit[i]
-		d.ifacePreviousBit[i] = curBit
 
-		// Set the clock period count
-		if curBit == prev {
-			d.ifaceClockPeriodsSinceLastBitChange[i]++
-		} else {
-			d.ifaceClockPeriodsSinceLastBitChange[i] = 0
-		}
-
-		// Handle bit change
-		if curBit != prev {
-			decoder := d.ifaceDecoders[i]
-			decoder.Decode(curBit)
-		}
+		decoder := d.ifaceDecoders[i]
+		decoder.Handle(curBit)
 	}
 }
